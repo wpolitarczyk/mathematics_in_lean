@@ -7,8 +7,13 @@ namespace C03S01
 
 #check ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε
 
-theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε :=
-  sorry
+theorem my_lemma : ∀ x y ε : ℝ, 0 < ε → ε ≤ 1 → |x| < ε → |y| < ε → |x * y| < ε := by
+  intro x y ε ε_pos ε_one x_less y_less
+  calc
+    |x * y| = |x| * |y| := by apply abs_mul
+    _       < ε * ε := by apply mul_lt_mul'' x_less y_less (abs_nonneg x) (abs_nonneg y)
+    _       ≤ ε * 1   := by apply mul_le_mul (le_refl ε) ε_one (le_of_lt ε_pos) (le_of_lt ε_pos)
+    _       = ε       := by apply mul_one
 
 section
 variable (a b δ : ℝ)
@@ -63,15 +68,29 @@ example (hfa : FnUb f a) (hgb : FnUb g b) : FnUb (fun x ↦ f x + g x) (a + b) :
   apply hfa
   apply hgb
 
-example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) :=
-  sorry
+example (hfa : FnLb f a) (hgb : FnLb g b) : FnLb (fun x ↦ f x + g x) (a + b) := by
+  intro x
+  dsimp
+  apply add_le_add
+  apply hfa
+  apply hgb
 
-example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 :=
-  sorry
+example (nnf : FnLb f 0) (nng : FnLb g 0) : FnLb (fun x ↦ f x * g x) 0 := by
+  intro x
+  dsimp
+  apply mul_nonneg
+  apply nnf
+  apply nng
 
 example (hfa : FnUb f a) (hgb : FnUb g b) (nng : FnLb g 0) (nna : 0 ≤ a) :
-    FnUb (fun x ↦ f x * g x) (a * b) :=
-  sorry
+    FnUb (fun x ↦ f x * g x) (a * b) := by
+  intro x
+  dsimp
+  apply mul_le_mul
+  apply hfa x
+  apply hgb x
+  apply nng x
+  apply nna
 
 end
 
@@ -103,11 +122,18 @@ example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f x + g x := by
 example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f x + g x :=
   fun _a _b aleb ↦ add_le_add (mf aleb) (mg aleb)
 
-example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x :=
-  sorry
+example {c : ℝ} (mf : Monotone f) (nnc : 0 ≤ c) : Monotone fun x ↦ c * f x := by
+  intro a b aleb
+  dsimp
+  apply mul_le_mul_of_nonneg_left
+  apply mf aleb
+  apply nnc
 
-example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f (g x) :=
-  sorry
+example (mf : Monotone f) (mg : Monotone g) : Monotone fun x ↦ f (g x) := by
+  intro a b aleb
+  dsimp
+  apply mf
+  apply mg aleb
 
 def FnEven (f : ℝ → ℝ) : Prop :=
   ∀ x, f x = f (-x)
@@ -123,13 +149,19 @@ example (ef : FnEven f) (eg : FnEven g) : FnEven fun x ↦ f x + g x := by
 
 
 example (of : FnOdd f) (og : FnOdd g) : FnEven fun x ↦ f x * g x := by
-  sorry
+  intro x
+  dsimp
+  rw [of, og, neg_mul_neg]
 
 example (ef : FnEven f) (og : FnOdd g) : FnOdd fun x ↦ f x * g x := by
-  sorry
+  intro x
+  dsimp
+  rw [ef, og, neg_mul_eq_mul_neg]
 
 example (ef : FnEven f) (og : FnOdd g) : FnEven fun x ↦ f (g x) := by
-  sorry
+  intro x
+  dsimp
+  rw [og, ef, neg_neg]
 
 end
 
@@ -144,7 +176,9 @@ example : s ⊆ s := by
 theorem Subset.refl : s ⊆ s := fun _x xs ↦ xs
 
 theorem Subset.trans : r ⊆ s → s ⊆ t → r ⊆ t := by
-  sorry
+  intro h_rs h_st x h_r
+  apply h_st
+  apply h_rs h_r
 
 end
 
@@ -155,8 +189,10 @@ variable (s : Set α) (a b : α)
 def SetUb (s : Set α) (a : α) :=
   ∀ x, x ∈ s → x ≤ a
 
-example (h : SetUb s a) (h' : a ≤ b) : SetUb s b :=
-  sorry
+example (h : SetUb s a) (h' : a ≤ b) : SetUb s b := by
+  intro x h_s
+  apply h x at h_s
+  apply le_trans h_s h'
 
 end
 
@@ -169,12 +205,18 @@ example (c : ℝ) : Injective fun x ↦ x + c := by
   exact (add_left_inj c).mp h'
 
 example {c : ℝ} (h : c ≠ 0) : Injective fun x ↦ c * x := by
-  sorry
+  intro x1 x2
+  dsimp
+  intro h_x
+  apply (mul_right_inj' h).mp h_x
 
 variable {α : Type*} {β : Type*} {γ : Type*}
 variable {g : β → γ} {f : α → β}
 
 example (injg : Injective g) (injf : Injective f) : Injective fun x ↦ g (f x) := by
-  sorry
-
+  intro x1 x2 h
+  dsimp at h
+  apply injg at h
+  apply injf at h
+  exact h
 end

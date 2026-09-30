@@ -77,29 +77,42 @@ theorem abs_add_le (x y : ℝ) : |x + y| ≤ |x| + |y| := by
   · linarith [(neg_le_abs x), (neg_le_abs y)]
 
 theorem lt_abs : x < |y| ↔ x < y ∨ x < -y := by
-  constructor
-  · intro h
-    rw [lt_abs] at h
-    rcases h with h1 | h2
-    · left; exact h1
-    · right; exact h2
-  · intro h
-    rcases h with h1 | h2
-    · calc
-        x < y := h1
-        _ ≤ |y| := le_abs_self y
-    · calc
-        x < -y := h2
-        _ ≤ |y| := by apply neg_le_abs
+  rcases le_or_gt 0 y with h | h
+  · rw [abs_of_nonneg h]
+    constructor
+    · intro h'
+      left; exact h'
+    · intro h'
+      rcases h' with h' | h'
+      · exact h'
+      · linarith
+  · rw [abs_of_neg h]
+    constructor
+    · intro h'
+      right; exact h'
+    · intro h'
+      rcases h' with h' | h'
+      · linarith
+      · exact h'
 
 theorem abs_lt : |x| < y ↔ -y < x ∧ x < y := by
-  constructor
-  · intro h
-    rw [abs_lt] at h
-    exact h
-  · intro h
-    rw [abs_lt]
-    exact h
+  rcases le_or_gt 0 x with h | h
+  · rw [abs_of_nonneg h]
+    constructor
+    · intro h'
+      constructor
+      · linarith
+      · linarith
+    · intro h'
+      exact h'.right
+  · rw [abs_of_neg h]
+    constructor
+    · intro h'
+      constructor
+      · linarith
+      · linarith
+    · intro h'
+      linarith
 
 end MyAbs
 

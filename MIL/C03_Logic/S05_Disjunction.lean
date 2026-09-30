@@ -58,19 +58,48 @@ example : x < |y| → x < y ∨ x < -y := by
 namespace MyAbs
 
 theorem le_abs_self (x : ℝ) : x ≤ |x| := by
-  sorry
+  rcases le_or_gt 0 x with h | h
+  · rw [abs_of_nonneg h]
+  · rw [abs_of_neg h]
+    calc
+      x ≤  0 := by apply (le_of_lt h)
+      _ ≤ -x := by apply neg_nonneg.mpr (le_of_lt h)
 
 theorem neg_le_abs (x : ℝ) : -x ≤ |x| := by
-  sorry
+  have h : -x ≤ |(-x)| := le_abs_self (-x)
+  rw [abs_neg] at h
+  exact h
 
 theorem abs_add_le (x y : ℝ) : |x + y| ≤ |x| + |y| := by
-  sorry
+  apply abs_le'.mpr
+  constructor
+  · linarith [(le_abs_self x), (le_abs_self y)]
+  · linarith [(neg_le_abs x), (neg_le_abs y)]
 
 theorem lt_abs : x < |y| ↔ x < y ∨ x < -y := by
-  sorry
+  constructor
+  · intro h
+    rw [lt_abs] at h
+    rcases h with h1 | h2
+    · left; exact h1
+    · right; exact h2
+  · intro h
+    rcases h with h1 | h2
+    · calc
+        x < y := h1
+        _ ≤ |y| := le_abs_self y
+    · calc
+        x < -y := h2
+        _ ≤ |y| := by apply neg_le_abs
 
 theorem abs_lt : |x| < y ↔ -y < x ∧ x < y := by
-  sorry
+  constructor
+  · intro h
+    rw [abs_lt] at h
+    exact h
+  · intro h
+    rw [abs_lt]
+    exact h
 
 end MyAbs
 
@@ -91,23 +120,56 @@ example {m n k : ℕ} (h : m ∣ n ∨ m ∣ k) : m ∣ n * k := by
     apply dvd_mul_right
 
 example {z : ℝ} (h : ∃ x y, z = x ^ 2 + y ^ 2 ∨ z = x ^ 2 + y ^ 2 + 1) : z ≥ 0 := by
-  sorry
+  rcases h with ⟨x, y, h0 | h1⟩ <;> linarith [sq_nonneg x, sq_nonneg y]
 
 example {x : ℝ} (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h' : (x-1) * (x+1) = 0 := by
+    calc
+      (x-1) * (x+1) = x^2 - 1 := by ring
+      _ = 0 := by rw [h, sub_self]
+  apply mul_eq_zero.mp at h'
+  rcases h' with h0 | h1
+  · left; linarith
+  · right; linarith
 
 example {x y : ℝ} (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
-  sorry
-
+  have h' : (x-y) * (x+y) = 0 := by
+    calc
+      (x-y) * (x+y) = x^2 - y^2 := by ring
+      _ = 0 := by rw [h, sub_self]
+  apply mul_eq_zero.mp at h'
+  rcases h' with h0 | h1
+  · left; linarith
+  · right; linarith
 section
 variable {R : Type*} [CommRing R] [IsDomain R]
 variable (x y : R)
 
 example (h : x ^ 2 = 1) : x = 1 ∨ x = -1 := by
-  sorry
+  have h' : (x-1) * (x+1) = 0 := by
+    calc
+      (x-1) * (x+1) = x^2 - 1 := by ring
+      _ = 0 := by rw [h, sub_self]
+  apply mul_eq_zero.mp at h'
+  rcases h' with h0 | h1
+  · left
+    exact sub_eq_zero.mp h0
+  · right
+    apply sub_eq_zero.mp
+    simpa using h1
 
 example (h : x ^ 2 = y ^ 2) : x = y ∨ x = -y := by
-  sorry
+  have h' : (x-y) * (x+y) = 0 := by
+    calc
+      (x-y) * (x+y) = x^2 - y^2 := by ring
+      _ = 0 := by rw [h, sub_self]
+  apply mul_eq_zero.mp at h'
+  rcases h' with h0 | h1
+  · left
+    exact sub_eq_zero.mp h0
+  · right
+    apply sub_eq_zero.mp
+    simpa using h1
 
 end
 
@@ -124,5 +186,15 @@ example (P : Prop) : ¬¬P → P := by
   contradiction
 
 example (P Q : Prop) : P → Q ↔ ¬P ∨ Q := by
-  sorry
-
+  constructor
+  · intro h
+    by_cases h' : P
+    · by_cases h'' : Q
+      · right; exact h''
+      · apply h at h'
+        contradiction
+    · left; exact h'
+  · intro h h'
+    rcases h with h0 | h1
+    · contradiction
+    · exact h1
